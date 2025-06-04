@@ -1,0 +1,714 @@
+openapi: 3.0.3
+info:
+  title: Web Visitor API Documentation
+  description: API for monitoring website uptime and performance
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@webvisitor.com
+
+servers:
+  - url: http://localhost:8080
+    description: Development server
+  - url: https://api.webvisitor.com
+    description: Production server
+
+security:
+  - BearerAuth: []
+  - SessionCookie: []
+
+paths:
+  /:
+    get:
+      summary: Health check endpoint
+      description: Check if the API server is running
+      tags:
+        - Health
+      security: []
+      responses:
+        '200':
+          description: Server is running
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "API is running."
+
+  /api/v1/user/create/:
+    post:
+      summary: Create new user account
+      description: Register a new user with name, email, and password
+      tags:
+        - User Management
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserCreatedResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/user/login/:
+    post:
+      summary: User login
+      description: Authenticate user and create session
+      tags:
+        - User Management
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginUserRequest'
+      responses:
+        '200':
+          description: Login successful
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: session_token=abc123; Path=/; HttpOnly
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: Validation error or user doesn't exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/user/:
+    get:
+      summary: Get user details
+      description: Retrieve authenticated user's profile information
+      tags:
+        - User Management
+      responses:
+        '200':
+          description: User details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetailsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/user/logout/:
+    post:
+      summary: User logout
+      description: Invalidate user session and clear cookies
+      tags:
+        - User Management
+      responses:
+        '200':
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '500':
+          description: Error logging out
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/user/verify/:
+    post:
+      summary: Verify user account
+      description: Verify user's email address
+      tags:
+        - User Management
+      security: []
+      responses:
+        '200':
+          description: Verification endpoint response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /api/v1/user/resend/{email}:
+    post:
+      summary: Resend verification email
+      description: Send verification email to the specified address
+      tags:
+        - User Management
+      security: []
+      parameters:
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+            format: email
+          description: Email address to send verification to
+      responses:
+        '200':
+          description: Verification email sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /api/v1/uri/:
+    post:
+      summary: Add new URL to monitor
+      description: Add a new URL for uptime monitoring
+      tags:
+        - URL Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddUriRequest'
+      responses:
+        '201':
+          description: URL added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UriCreatedResponse'
+        '400':
+          description: Validation error or invalid URL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: URL already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      summary: Get all monitored URLs
+      description: Retrieve all URLs being monitored by the authenticated user
+      tags:
+        - URL Management
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number for pagination
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+          description: Number of items per page
+      responses:
+        '200':
+          description: URLs retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UriListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/uri/{id}:
+    put:
+      summary: Update monitored URL
+      description: Update URL or name of an existing monitored URL
+      tags:
+        - URL Management
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: URL ID to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditUriRequest'
+      responses:
+        '200':
+          description: URL updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UriUpdatedResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: URL not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: URL already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Delete monitored URL
+      description: Remove URL from monitoring and delete all associated logs
+      tags:
+        - URL Management
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: URL ID to delete
+      responses:
+        '200':
+          description: URL deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UriDeletedResponse'
+        '404':
+          description: URL not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/logs/{id}:
+    get:
+      summary: Get monitoring logs for a URL
+      description: Retrieve monitoring logs for a specific URL
+      tags:
+        - Logs
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: URL ID to get logs for
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number for pagination
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+          description: Number of items per page
+      responses:
+        '200':
+          description: Logs retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogsResponse'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: URL not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    SessionCookie:
+      type: apiKey
+      in: cookie
+      name: session_token
+
+  schemas:
+    CreateUserRequest:
+      type: object
+      required:
+        - name
+        - email
+        - password
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 50
+          example: "John Doe"
+        email:
+          type: string
+          format: email
+          example: "john@example.com"
+        password:
+          type: string
+          minLength: 8
+          example: "password123"
+
+    LoginUserRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: "john@example.com"
+        password:
+          type: string
+          example: "password123"
+
+    AddUriRequest:
+      type: object
+      required:
+        - url
+        - name
+      properties:
+        url:
+          type: string
+          minLength: 5
+          maxLength: 500
+          example: "https://example.com"
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+          example: "My Website"
+
+    EditUriRequest:
+      type: object
+      properties:
+        url:
+          type: string
+          minLength: 5
+          maxLength: 500
+          example: "https://newdomain.com"
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+          example: "Updated Website Name"
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "John Doe"
+        email:
+          type: string
+          example: "john@example.com"
+
+    UrlData:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        url:
+          type: string
+          example: "https://example.com"
+        name:
+          type: string
+          example: "My Website"
+        status:
+          type: string
+          enum: [online, offline, error]
+          example: "online"
+        response_time:
+          type: integer
+          example: 250
+        response_code:
+          type: integer
+          example: 200
+        last_checked:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T09:00:00Z"
+        latest_check:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [online, offline, error]
+            response_time:
+              type: integer
+            response_code:
+              type: integer
+            checked_at:
+              type: string
+              format: date-time
+
+    LogEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        url_id:
+          type: integer
+          example: 1
+        status:
+          type: string
+          enum: [online, offline, error]
+          example: "online"
+        response_time:
+          type: integer
+          example: 250
+        response_code:
+          type: integer
+          example: 200
+        error_message:
+          type: string
+          example: ""
+        checked_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+
+    Pagination:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 50
+        limit:
+          type: integer
+          example: 10
+        offset:
+          type: integer
+          example: 0
+        pages:
+          type: integer
+          example: 5
+
+    UserCreatedResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "User created"
+        user:
+          $ref: '#/components/schemas/User'
+
+    LoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Login successful"
+        user:
+          $ref: '#/components/schemas/User'
+
+    UserDetailsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        user:
+          $ref: '#/components/schemas/User'
+
+    UriCreatedResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "URL added successfully"
+        data:
+          $ref: '#/components/schemas/UrlData'
+
+    UriUpdatedResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "URL updated successfully"
+        data:
+          $ref: '#/components/schemas/UrlData'
+
+    UriDeletedResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "URL and all associated logs deleted successfully"
+        data:
+          type: object
+          properties:
+            url_id:
+              type: string
+              example: "1"
+            url_name:
+              type: string
+              example: "My Website"
+            logs_count:
+              type: integer
+              example: 25
+
+    UriListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "URLs retrieved successfully"
+        data:
+          type: object
+          properties:
+            urls:
+              type: array
+              items:
+                $ref: '#/components/schemas/UrlData'
+            pagination:
+              $ref: '#/components/schemas/Pagination'
+
+    LogsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Logs retrieved successfully"
+        data:
+          type: object
+          properties:
+            logs:
+              type: array
+              items:
+                $ref: '#/components/schemas/LogEntry'
+            pagination:
+              $ref: '#/components/schemas/Pagination'
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Operation completed successfully"
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "Validation failed"
+        message:
+          type: string
+          example: "Email is required"
+
+tags:
+  - name: Health
+    description: API health check endpoints
+  - name: User Management
+    description: User registration, authentication, and profile management
+  - name: URL Management
+    description: CRUD operations for monitored URLs
+  - name: Logs
+    description: Monitoring logs and analytics
+

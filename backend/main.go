@@ -23,6 +23,7 @@ func main() {
 	}
 
 	r := gin.Default()
+	setupSwaggerRoutes(r)
 
 	log.Println("Connecting to database...")
 	if err := db.Connect(); err != nil {
@@ -44,8 +45,8 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"message": "API is running."})
 	})
 
-	routes.Init(r)
 
+	routes.Init(r)
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"

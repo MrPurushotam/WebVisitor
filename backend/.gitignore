@@ -37,3 +37,8 @@ Thumbs.db
 # Binary output directories
 /bin/
 /dist/
+
+# Go distribution packages
+backend/go*.tar.gz
+# Or more generally:
+# *.tar.gz
