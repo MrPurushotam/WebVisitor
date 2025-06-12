@@ -15,6 +15,7 @@ func CreateSchema() error {
 			email VARCHAR(150) NOT NULL UNIQUE,
 			password VARCHAR(255) NOT NULL,
 			verified BOOLEAN DEFAULT FALSE,
+			tier ENUM('free','premium') DEFAULT 'free',
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 		);`
@@ -25,10 +26,13 @@ func CreateSchema() error {
 			user_id INT NOT NULL,
 			url VARCHAR(500) NOT NULL,
 			name VARCHAR(100),
-			` + "`interval`" + ` INT DEFAULT 500,
+			` + "`interval`" + ` ENUM('6hr','12hr') DEFAULT '6hr',
+			custom_interval INT DEFAULT NULL,
+
 			last_checked TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			status ENUM('online', 'offline', 'error') DEFAULT 'online',
 			response_time INT DEFAULT 0,
+			
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
