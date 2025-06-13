@@ -52,31 +52,31 @@ func main() {
 		cred := c.Param("cred")
 		password := os.Getenv("CORNJOB_PASSWORD")
 		if password == "" {
-            password = "Qwert"
-        }
+			password = "Qwert"
+		}
 		if cred != password {
-			log.Printf("Incorrect passowrd can't switch CornJob Off")
+			log.Printf("Incorrect passowrd can't switch off CornJob.")
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Error disabling CornJob.", "success": false})
 			return
 		}
 		service.StopCornJob()
 		c.JSON(http.StatusOK, gin.H{"message": "CornJob disabled.", "success": true})
 	})
-	
+
 	r.GET("/enable/:cred", func(c *gin.Context) {
 		cred := c.Param("cred")
 		password := os.Getenv("CORNJOB_PASSWORD")
 		if password == "" {
-            password = "Qwert"
-        }
+			password = "Qwert"
+		}
 
 		if cred != password {
-			log.Printf("Incorrect passowrd can't switch CornJob Off")
+			log.Printf("Incorrect passowrd can't switch on CornJob.")
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Error disabling CornJob.", "success": false})
 			return
 		}
 		service.EnableCornJob()
-		c.JSON(http.StatusOK, gin.H{"message": "CornJob disabled.", "success": true})
+		c.JSON(http.StatusOK, gin.H{"message": "CornJob enabled.", "success": true})
 	})
 
 	routes.Init(r)
